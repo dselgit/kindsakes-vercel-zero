@@ -1,8 +1,30 @@
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Use POST' });
+  if (req.method !== 'POST')
+    return res.status(405).json({ ok: false, error: 'Use POST' });
+
+  // 🔧 ensure we have a JSON object
+  let body = req.body;
+  if (!body) {
+    const raw = await new Promise((resolve) => {
+      let data = '';
+      req.on('data', (chunk) => (data += chunk));
+      req.on('end', () => resolve(data));
+    });
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      body = {};
+    }
+  } else if (typeof body === 'string') {
+    try {
+      body = JSON.parse(body);
+    } catch {
+      body = {};
+    }
+  }
 
   try {
-    const { senderEmail, recipientEmail, message, occasion, anonymous } = req.body || {};
+    const { senderEmail, recipientEmail, message, occasion, anonymous } = body || {};
 
     // 1) make a token + link
     const token = Array.from({ length: 16 }, () =>
@@ -11,14 +33,14 @@ export default async function handler(req, res) {
     const base = process.env.SITE_URL || `https://${req.headers.host}`;
     const magicLink = `${base}/note/${token}`;
 
-    // 2) save to Supabase via REST (no SDK install needed)
+    // 2) save to Supabase via REST
     const row = {
       sender_email: senderEmail || null,
       recipient_email: recipientEmail || null,
       message: message || null,
       occasion: occasion || null,
       anonymous: !!anonymous,
-      token
+      token,
     };
 
     const url = `${process.env.SUPABASE_URL}/rest/v1/notes`;
@@ -28,14 +50,16 @@ export default async function handler(req, res) {
         apikey: process.env.SUPABASE_SERVICE_ROLE,
         Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE}`,
         'Content-Type': 'application/json',
-        Prefer: 'return=representation'
+        Prefer: 'return=representation',
       },
-      body: JSON.stringify(row)
+      body: JSON.stringify(row),
     });
 
     if (!r.ok) {
       const txt = await r.text();
-      return res.status(500).json({ ok: false, error: 'Supabase insert failed', details: txt });
+      return res
+        .status(500)
+        .json({ ok: false, error: 'Supabase insert failed', details: txt });
     }
 
     return res.status(200).json({ ok: true, magicLink, token });
