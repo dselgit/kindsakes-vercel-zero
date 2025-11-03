@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your Kindsake</title>
+  <style>body{font-family:Inter,system-ui,sans-serif;margin:2rem;color:#0f172a}</style>
+</head>
+<body>
+  <h1>Your Kindsake</h1>
+  <p id="info" style="color:#475569"></p>
+  <script>
+    const token = location.pathname.split('/').pop();
+    document.getElementById('info').textContent = 'Token: ' + token + ' (placeholder view)';
+  </script>
+</body>
+</html>
