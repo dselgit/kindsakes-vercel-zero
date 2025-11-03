@@ -49,5 +49,5 @@ export default async function handler(req, res) {
   });
 
   if (!r.ok) return res.status(500).json({ ok:false, error:'Supabase insert failed', details: await r.text() });
-  return res.status(200).json({ ok:true, magicLink, token, received: row });
+return res.status(200).json({ ok:true, magicLink, token, received: body });
 }
